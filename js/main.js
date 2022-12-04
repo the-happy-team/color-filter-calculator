@@ -1,5 +1,5 @@
 // TODO:
-//   - sliders for selecting hue center and width
+//   ~ sliders for selecting hue center and width
 //   ? display multiple images
 
 const mSketch = (p5s) => {
@@ -9,6 +9,8 @@ const mSketch = (p5s) => {
   let mImageColor;
   let mImageLoaded = false;
   let mImageColorVisible = true;
+  let centerHue = 140;
+  let deltaHue = 40;
 
   const resizeCanvas = () => {
     const menuHeight = $("#my-menu").outerHeight();
@@ -52,7 +54,7 @@ const mSketch = (p5s) => {
     return mImageHue;
   };
 
-  const processImage = (mImageHue, centerHue = 140, deltaHue = 40) => {
+  const processImage = (mImageHue, centerHue, deltaHue) => {
     mImageColor.loadPixels();
     const minHue = p5s.max(centerHue - deltaHue, 0);
     const maxHue = p5s.min(centerHue + deltaHue, 360);
@@ -77,7 +79,7 @@ const mSketch = (p5s) => {
       mImageLoaded = true;
       resizeImage();
       mImageResizedHue = getImageHue(mImageResized);
-      processImage(mImageResizedHue);
+      processImage(mImageResizedHue, centerHue, deltaHue);
     });
   };
 
@@ -94,10 +96,7 @@ const mSketch = (p5s) => {
 
           resizeImage();
           mImageResizedHue = getImageHue(mImageResized);
-          processImage(mImageResizedHue);
-
-          // document.getElementById('my-texture-box').classList.remove('file-input-disable');
-          // document.getElementById('my-texture-label').classList.remove('file-input-disable');
+          processImage(mImageResizedHue, centerHue, deltaHue);
         }
         image.src = readerEvent.target.result;
       }
@@ -107,6 +106,16 @@ const mSketch = (p5s) => {
     $('#my-filter-toggle').click((event) => {
       event.target.classList.toggle('on');
       mImageColorVisible = !mImageColorVisible;
+    });
+
+    $('#my-hue-center-slider').on('input', (event, _) => {
+      centerHue = event.target.value;
+      processImage(mImageResizedHue, centerHue, deltaHue);
+    });
+
+    $('#my-hue-width-slider').on('input', (event, _) => {
+      deltaHue = event.target.value;
+      processImage(mImageResizedHue, centerHue, deltaHue);
     });
   };
 
@@ -145,7 +154,7 @@ const mSketch = (p5s) => {
     resizeCanvas();
     resizeImage();
     mImageResizedHue = getImageHue(mImageResized);
-    processImage(mImageResizedHue);
+    processImage(mImageResizedHue, centerHue, deltaHue);
   };
 };
 
