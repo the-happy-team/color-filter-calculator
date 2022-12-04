@@ -9,16 +9,22 @@ body {
     flex-direction: column;
 }
 
+.canvas-container {
+    height: 90%;
+}
+
 .menu {
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
     background-color: aqua;
     height: 10%;
 }
 
-.canvas-container {
-    height: 90%;
+.file-input {
+    width: 20%;
 }
 
 .toggle {

@@ -6,8 +6,10 @@
   </head>
   <body>
     <div id="my-menu" class="menu">
-        <input name="imgfile" type="file" id="my-img-file" class="file-input file-input-image" accept=".jpg,.png">
-        <div class="toggle on" id="my-filter-toggle">Show Overlay</div>
+        <input type="file" id="my-img-file" class="file-input" accept=".jpg,.png">
+        <div id="my-filter-toggle" class="toggle on">Show Overlay</div>
+        <input type="range" id="my-hue-center-slider" class="slider" min="0" max="360" value="140">
+        <input type="range" id="my-hue-width-slider" class="slider" min="1" max="120" value="40">
     </div>
     <div id="my-canvas-container" class="canvas-container"></div>
   </body>
