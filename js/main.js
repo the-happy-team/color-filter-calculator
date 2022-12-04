@@ -1,14 +1,15 @@
 // TODO:
-//   - button to load new image
-//   ? sliders for selecting green threshold
-//   ? button to toggle green
+//   - sliders for selecting hue center and width
+//   - button to toggle green overlay
 //   ? display multiple images
 
 const mSketch = (p5s) => {
   let mImageOriginal;
   let mImageResized;
+  let mImageResizedHue;
   let mImageColor;
   let mImageLoaded = false;
+  let mImageColorVisible = true;
 
   const resizeCanvas = () => {
     const menuHeight = $("#my-menu").outerHeight();
@@ -38,32 +39,25 @@ const mSketch = (p5s) => {
       0, 0, mImageResized.width, mImageResized.height);
   };
 
-  const loadImage = (filepath) => {
-    p5s.loadImage(filepath, img => {
-      mImageOriginal = img;
-      mImageLoaded = true;
-      resizeImage();
-      processImage();
-    });
-  };
-
-  const getImageHue = () => {
+  const getImageHue = (mImg) => {
     let mImageHue = [];
-    mImageResized.loadPixels();
-    for (let i = 0; i < mImageResized.width * mImageResized.height; i++) {
+    mImg.loadPixels();
+    for (let i = 0; i < mImg.width * mImg.height; i++) {
       const idx = 4 * i;
       const mColor = p5s.color(
-        mImageResized.pixels[idx + 0],
-        mImageResized.pixels[idx + 1],
-        mImageResized.pixels[idx + 2]);
+        mImg.pixels[idx + 0],
+        mImg.pixels[idx + 1],
+        mImg.pixels[idx + 2]);
       mImageHue.push(p5s.hue(mColor));
     }
     return mImageHue;
   };
 
-  const processImage = () => {
-    mImageHue = getImageHue();
+  const processImage = (mImageHue, centerHue = 140, deltaHue = 40) => {
     mImageColor.loadPixels();
+    const minHue = p5s.max(centerHue - deltaHue, 0);
+    const maxHue = p5s.min(centerHue + deltaHue, 360);
+
     for (let i = 0; i < mImageColor.width * mImageColor.height; i++) {
       const idx = 4 * i;
       mImageColor.pixels[idx + 0] = 0;
@@ -71,11 +65,45 @@ const mSketch = (p5s) => {
       mImageColor.pixels[idx + 2] = 0;
       mImageColor.pixels[idx + 3] = 0;
 
-      if (mImageHue[i] > 100 && mImageHue[i] < 180) {
+      if (mImageHue[i] > minHue && mImageHue[i] < maxHue) {
         mImageColor.pixels[idx + 3] = 255;
       }
     }
     mImageColor.updatePixels();
+  };
+
+  const loadImage = (filepath) => {
+    p5s.loadImage(filepath, img => {
+      mImageOriginal = img;
+      mImageLoaded = true;
+      resizeImage();
+      mImageResizedHue = getImageHue(mImageResized);
+      processImage(mImageResizedHue);
+    });
+  };
+
+  const setupMenu = () => {
+    $('.file-input-image').change((event) => {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (readerEvent) => {
+        const image = new Image();
+        image.onload = (_) => {
+          mImageOriginal.resize(image.width, image.height);
+          mImageOriginal.drawingContext.drawImage(image, 0, 0);
+
+          resizeImage();
+          mImageResizedHue = getImageHue(mImageResized);
+          processImage(mImageResizedHue);
+
+          // document.getElementById('my-texture-box').classList.remove('file-input-disable');
+          // document.getElementById('my-texture-label').classList.remove('file-input-disable');
+        }
+        image.src = readerEvent.target.result;
+      }
+      reader.readAsDataURL(file);
+    });
   };
 
   p5s.setup = () => {
@@ -89,6 +117,7 @@ const mSketch = (p5s) => {
     p5s.randomSeed(1010);
     p5s.frameRate(24);
     loadImage("./assets/img00.jpg");
+    setupMenu();
   };
 
   p5s.draw = () => {
@@ -101,7 +130,9 @@ const mSketch = (p5s) => {
       p5s.push();
       p5s.imageMode(p5s.CENTER);
       p5s.image(mImageResized, p5s.width / 2.0, p5s.height / 2.0);
-      p5s.image(mImageColor, p5s.width / 2.0, p5s.height / 2.0);
+      if (mImageColorVisible) {
+        p5s.image(mImageColor, p5s.width / 2.0, p5s.height / 2.0);
+      }
       p5s.pop();
     }
   };
@@ -109,6 +140,8 @@ const mSketch = (p5s) => {
   p5s.windowResized = () => {
     resizeCanvas();
     resizeImage();
+    mImageResizedHue = getImageHue(mImageResized);
+    processImage(mImageResizedHue);
   };
 };
 
