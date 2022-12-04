@@ -1,6 +1,7 @@
 // TODO:
 //   - button to load new image
 //   ? sliders for selecting green threshold
+//   ? button to toggle green
 //   ? display multiple images
 
 const mSketch = (p5s) => {
@@ -50,10 +51,12 @@ const mSketch = (p5s) => {
     let mImageHue = [];
     mImageResized.loadPixels();
     for (let i = 0; i < mImageResized.width * mImageResized.height; i++) {
-      const row = Math.floor(i / mImageColor.width);
-      const col = i % mImageColor.width;
-      const mColor = mImageResized.get(col, row);
-      mImageHue.push(p5s.hue(p5s.color(mColor[0], mColor[1], mColor[2])));
+      const idx = 4 * i;
+      const mColor = p5s.color(
+        mImageResized.pixels[idx + 0],
+        mImageResized.pixels[idx + 1],
+        mImageResized.pixels[idx + 2]);
+      mImageHue.push(p5s.hue(mColor));
     }
     return mImageHue;
   };
@@ -62,13 +65,14 @@ const mSketch = (p5s) => {
     mImageHue = getImageHue();
     mImageColor.loadPixels();
     for (let i = 0; i < mImageColor.width * mImageColor.height; i++) {
-      const row = Math.floor(i / mImageColor.width);
-      const col = i % mImageColor.width;
+      const idx = 4 * i;
+      mImageColor.pixels[idx + 0] = 0;
+      mImageColor.pixels[idx + 1] = 255;
+      mImageColor.pixels[idx + 2] = 0;
+      mImageColor.pixels[idx + 3] = 0;
 
       if (mImageHue[i] > 100 && mImageHue[i] < 180) {
-        mImageColor.set(col, row, p5s.color(0, 255, 0, 255));
-      } else {
-        mImageColor.set(col, row, p5s.color(0, 0, 0, 0));
+        mImageColor.pixels[idx + 3] = 255;
       }
     }
     mImageColor.updatePixels();
