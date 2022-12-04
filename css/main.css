@@ -10,10 +10,28 @@ body {
 }
 
 .menu {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     background-color: aqua;
     height: 10%;
 }
 
 .canvas-container {
     height: 90%;
+}
+
+.toggle {
+    padding: 8px 14px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: #ddd;
+    color: #000;
+    user-select: none;
+}
+
+.toggle.on {
+    background-color: #00642A;
+    color: #fff;
 }

@@ -1,6 +1,5 @@
 // TODO:
 //   - sliders for selecting hue center and width
-//   - button to toggle green overlay
 //   ? display multiple images
 
 const mSketch = (p5s) => {
@@ -83,7 +82,7 @@ const mSketch = (p5s) => {
   };
 
   const setupMenu = () => {
-    $('.file-input-image').change((event) => {
+    $('#my-img-file').change((event) => {
       const file = event.target.files[0];
       const reader = new FileReader();
 
@@ -103,6 +102,11 @@ const mSketch = (p5s) => {
         image.src = readerEvent.target.result;
       }
       reader.readAsDataURL(file);
+    });
+
+    $('#my-filter-toggle').click((event) => {
+      event.target.classList.toggle('on');
+      mImageColorVisible = !mImageColorVisible;
     });
   };
 
