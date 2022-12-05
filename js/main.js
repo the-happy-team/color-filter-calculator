@@ -38,6 +38,9 @@ const mSketch = (p5s) => {
     mImageResized.copy(mImageOriginal,
       0, 0, mImageOriginal.width, mImageOriginal.height,
       0, 0, mImageResized.width, mImageResized.height);
+
+    mImageResizedHue = getImageHue(mImageResized);
+    processImage(mImageResizedHue, centerHue, deltaHue);
   };
 
   const getImageHue = (mImg) => {
@@ -78,8 +81,6 @@ const mSketch = (p5s) => {
       mImageOriginal = img;
       mImageLoaded = true;
       resizeImage();
-      mImageResizedHue = getImageHue(mImageResized);
-      processImage(mImageResizedHue, centerHue, deltaHue);
     });
   };
 
@@ -93,10 +94,7 @@ const mSketch = (p5s) => {
         image.onload = (_) => {
           mImageOriginal.resize(image.width, image.height);
           mImageOriginal.drawingContext.drawImage(image, 0, 0);
-
           resizeImage();
-          mImageResizedHue = getImageHue(mImageResized);
-          processImage(mImageResizedHue, centerHue, deltaHue);
         }
         image.src = readerEvent.target.result;
       }
@@ -109,12 +107,12 @@ const mSketch = (p5s) => {
     });
 
     $('#my-hue-center-slider').on('input', (event, _) => {
-      centerHue = event.target.value;
+      centerHue = parseInt(event.target.value);
       processImage(mImageResizedHue, centerHue, deltaHue);
     });
 
     $('#my-hue-width-slider').on('input', (event, _) => {
-      deltaHue = event.target.value;
+      deltaHue = parseInt(event.target.value);
       processImage(mImageResizedHue, centerHue, deltaHue);
     });
   };
@@ -153,8 +151,6 @@ const mSketch = (p5s) => {
   p5s.windowResized = () => {
     resizeCanvas();
     resizeImage();
-    mImageResizedHue = getImageHue(mImageResized);
-    processImage(mImageResizedHue, centerHue, deltaHue);
   };
 };
 
