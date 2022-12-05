@@ -41,3 +41,7 @@ body {
     background-color: #00642A;
     color: #fff;
 }
+
+.color-picker {
+    width: 15%;
+}

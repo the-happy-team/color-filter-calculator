@@ -1,6 +1,5 @@
 // TODO:
-//   ~ sliders for selecting hue center and width
-//   ? display multiple images
+//   - display info
 
 const mSketch = (p5s) => {
   let mImageOriginal;
@@ -9,7 +8,7 @@ const mSketch = (p5s) => {
   let mImageColor;
   let mImageLoaded = false;
   let mImageColorVisible = true;
-  let centerHue = 140;
+  let centerHue = 120;
   let deltaHue = 40;
 
   const resizeCanvas = () => {
@@ -61,16 +60,14 @@ const mSketch = (p5s) => {
     mImageColor.loadPixels();
     const minHue = p5s.max(centerHue - deltaHue, 0);
     const maxHue = p5s.min(centerHue + deltaHue, 360);
+    const currentColor = p5s.color(`hsl(${centerHue}, 100%, 50%)`);
 
     for (let i = 0; i < mImageColor.width * mImageColor.height; i++) {
       const idx = 4 * i;
-      mImageColor.pixels[idx + 0] = 0;
-      mImageColor.pixels[idx + 1] = 255;
-      mImageColor.pixels[idx + 2] = 0;
-      mImageColor.pixels[idx + 3] = 0;
+      currentColor.levels.forEach((v, ci) => mImageColor.pixels[idx + ci] = v);
 
-      if (mImageHue[i] > minHue && mImageHue[i] < maxHue) {
-        mImageColor.pixels[idx + 3] = 255;
+      if (mImageHue[i] < minHue || mImageHue[i] > maxHue) {
+        mImageColor.pixels[idx + 3] = 0;
       }
     }
     mImageColor.updatePixels();
@@ -106,8 +103,8 @@ const mSketch = (p5s) => {
       mImageColorVisible = !mImageColorVisible;
     });
 
-    $('#my-hue-center-slider').on('input', (event, _) => {
-      centerHue = parseInt(event.target.value);
+    $('#my-hue-center-picker').on('input', (event, _) => {
+      centerHue = parseInt(p5s.hue(p5s.color(event.target.value)));
       processImage(mImageResizedHue, centerHue, deltaHue);
     });
 
