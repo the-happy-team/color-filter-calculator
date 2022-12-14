@@ -1,5 +1,8 @@
 // TODO:
 //   - display info
+//   - use colorpicker for min/max not center/spread
+//   - use low-res image for processing and blobing
+
 
 const mSketch = (p5s) => {
   let mImageOriginal;
@@ -51,7 +54,16 @@ const mSketch = (p5s) => {
         mImg.pixels[idx + 0],
         mImg.pixels[idx + 1],
         mImg.pixels[idx + 2]);
-      mImageHue.push(p5s.hue(mColor));
+
+      const mcHue = p5s.hue(mColor);
+      const mcSaturation = p5s.saturation(mColor);
+      const mcLightness = p5s.lightness(mColor);
+
+      if ((mcSaturation > 10) && (mcLightness > 8) && (mcLightness < 65)) {
+        mImageHue.push(mcHue);
+      } else {
+        mImageHue.push(400);
+      }
     }
     return mImageHue;
   };
