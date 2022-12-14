@@ -1,6 +1,5 @@
 // TODO:
 //   - display info
-//   - use colorpicker for min/max not center/spread
 //   - use low-res image for processing and blobing
 
 
@@ -11,8 +10,8 @@ const mSketch = (p5s) => {
   let mImageColor;
   let mImageLoaded = false;
   let mImageColorVisible = true;
-  let centerHue = 120;
-  let deltaHue = 40;
+  let minHue = 100;
+  let maxHue = 140;
 
   const resizeCanvas = () => {
     const menuHeight = $("#my-menu").outerHeight();
@@ -42,7 +41,7 @@ const mSketch = (p5s) => {
       0, 0, mImageResized.width, mImageResized.height);
 
     mImageResizedHue = getImageHue(mImageResized);
-    processImage(mImageResizedHue, centerHue, deltaHue);
+    processImage(mImageResizedHue, minHue, maxHue);
   };
 
   const getImageHue = (mImg) => {
@@ -68,10 +67,11 @@ const mSketch = (p5s) => {
     return mImageHue;
   };
 
-  const processImage = (mImageHue, centerHue, deltaHue) => {
+  const processImage = (mImageHue, _minHue, _maxHue) => {
     mImageColor.loadPixels();
-    const minHue = p5s.max(centerHue - deltaHue, 0);
-    const maxHue = p5s.min(centerHue + deltaHue, 360);
+    const minHue = p5s.min(_minHue, _maxHue);
+    const maxHue = p5s.max(_minHue, _maxHue);
+    const centerHue = Math.floor(minHue + (maxHue - minHue) / 2.0);
     const currentColor = p5s.color(`hsl(${centerHue}, 100%, 50%)`);
 
     for (let i = 0; i < mImageColor.width * mImageColor.height; i++) {
@@ -115,14 +115,14 @@ const mSketch = (p5s) => {
       mImageColorVisible = !mImageColorVisible;
     });
 
-    $('#my-hue-center-picker').on('input', (event, _) => {
-      centerHue = parseInt(p5s.hue(p5s.color(event.target.value)));
-      processImage(mImageResizedHue, centerHue, deltaHue);
+    $('#my-hue-min-picker').on('input', (event, _) => {
+      minHue = parseInt(p5s.hue(p5s.color(event.target.value)));
+      processImage(mImageResizedHue, minHue, maxHue);
     });
 
-    $('#my-hue-width-slider').on('input', (event, _) => {
-      deltaHue = parseInt(event.target.value);
-      processImage(mImageResizedHue, centerHue, deltaHue);
+    $('#my-hue-max-picker').on('input', (event, _) => {
+      maxHue = parseInt(p5s.hue(p5s.color(event.target.value)));
+      processImage(mImageResizedHue, minHue, maxHue);
     });
   };
 
