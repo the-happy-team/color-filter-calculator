@@ -1,12 +1,12 @@
 // TODO:
 //   - display info (% de pixels, tamanho do quadrado numa tela 1mx1m)
-//   - use low-res image for processing and blobing
-
 
 const mSketch = (p5s) => {
   let mImageOriginal;
   let mImageResized;
   let mImageResizedHue;
+  let mImageResizedProcess;
+  let mImageColorProcess;
   let mImageColor;
   let mImageLoaded = false;
   let mImageColorVisible = true;
@@ -42,7 +42,13 @@ const mSketch = (p5s) => {
       0, 0, mImageOriginal.width, mImageOriginal.height,
       0, 0, mImageResized.width, mImageResized.height);
 
-    mImageResizedHue = getImageHue(mImageResized);
+    mImageResizedProcess = p5s.createImage(nWidth / 2, nHeight / 2);
+    mImageColorProcess = p5s.createImage(nWidth / 2, nHeight / 2);
+    mImageResizedProcess.copy(mImageOriginal,
+      0, 0, mImageOriginal.width, mImageOriginal.height,
+      0, 0, mImageResizedProcess.width, mImageResizedProcess.height);
+
+      // mImageResizedHue = getImageHue(mImageResized);
     processImage();
   };
 
@@ -87,43 +93,43 @@ const mSketch = (p5s) => {
     mImageColor.updatePixels();
   };
 
-  const processImageByDistance = () => {
-    mImg = mImageResized;
-    mImg.loadPixels();
-    mImageColor.loadPixels();
+  const processImageByDistance = (mImgIn, mImgOut) => {
+    mImgIn.loadPixels();
+    mImgOut.loadPixels();
     const currentColor = centerColor;
 
     const cR = centerColor.levels[0];
     const cG = centerColor.levels[1];
     const cB = centerColor.levels[2];
 
-    for (let i = 0; i < mImg.width * mImg.height; i++) {
+    for (let i = 0; i < mImgIn.width * mImgIn.height; i++) {
       const idx = 4 * i;
-      currentColor.levels.forEach((v, ci) => mImageColor.pixels[idx + ci] = v);
+      currentColor.levels.forEach((v, ci) => mImgOut.pixels[idx + ci] = v);
 
-      const mR = mImg.pixels[idx + 0];
-      const mG = mImg.pixels[idx + 1];
-      const mB = mImg.pixels[idx + 2];
+      const mR = mImgIn.pixels[idx + 0];
+      const mG = mImgIn.pixels[idx + 1];
+      const mB = mImgIn.pixels[idx + 2];
 
       const distance = Math.sqrt((mR - cR) * (mR - cR) + (mG - cG) * (mG - cG) + (mB - cB) * (mB - cB));
       const pcdDist = distance / 441.67;
 
       if (pcdDist > distanceFuzz) {
-        mImageColor.pixels[idx + 3] = 0;
+        mImgOut.pixels[idx + 3] = 0;
       }
     }
-    mImageColor.updatePixels();
-    mImageColor.filter(p5s.ERODE);
-    mImageColor.filter(p5s.ERODE);
-    mImageColor.filter(p5s.DILATE);
-    mImageColor.filter(p5s.DILATE);
-    mImageColor.filter(p5s.DILATE);
-    mImageColor.filter(p5s.ERODE);
+
+    mImgOut.updatePixels();
+    // mImgOut.filter(p5s.ERODE);
+    mImgOut.filter(p5s.ERODE);
+    mImgOut.filter(p5s.DILATE);
+    // mImgOut.filter(p5s.DILATE);
+    // mImgOut.filter(p5s.DILATE);
+    // mImgOut.filter(p5s.ERODE);
   }
 
   const processImage = () => {
     // processImageByHue(mImageResizedHue, minHue, maxHue);
-    processImageByDistance();
+    processImageByDistance(mImageResizedProcess, mImageColorProcess);
   }
 
   const loadImage = (filepath) => {
@@ -200,9 +206,20 @@ const mSketch = (p5s) => {
     if (mImageLoaded) {
       p5s.push();
       p5s.imageMode(p5s.CENTER);
+
       p5s.image(mImageResized, p5s.width / 2.0, p5s.height / 2.0);
       if (mImageColorVisible) {
-        p5s.image(mImageColor, p5s.width / 2.0, p5s.height / 2.0);
+        // p5s.image(mImageColor, p5s.width / 2.0, p5s.height / 2.0);
+      }
+
+      // p5s.image(mImageResizedProcess,
+      //   p5s.width / 2.0, p5s.height / 2.0,
+      //   mImageResized.width, mImageResized.height);
+
+      if (mImageColorVisible) {
+        p5s.image(mImageColorProcess,
+          p5s.width / 2.0, p5s.height / 2.0,
+          mImageResized.width, mImageResized.height);
       }
       p5s.pop();
     }
