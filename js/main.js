@@ -1,5 +1,5 @@
 // TODO:
-//   - display info
+//   - display info (% de pixels, tamanho do quadrado numa tela 1mx1m)
 //   - use low-res image for processing and blobing
 
 
@@ -12,6 +12,8 @@ const mSketch = (p5s) => {
   let mImageColorVisible = true;
   let minHue = 100;
   let maxHue = 140;
+  let centerColor = p5s.color('#009800')
+  let distanceFuzz = 0.30;
 
   const resizeCanvas = () => {
     const menuHeight = $("#my-menu").outerHeight();
@@ -41,7 +43,7 @@ const mSketch = (p5s) => {
       0, 0, mImageResized.width, mImageResized.height);
 
     mImageResizedHue = getImageHue(mImageResized);
-    processImage(mImageResizedHue, minHue, maxHue);
+    processImage();
   };
 
   const getImageHue = (mImg) => {
@@ -58,7 +60,7 @@ const mSketch = (p5s) => {
       const mcSaturation = p5s.saturation(mColor);
       const mcLightness = p5s.lightness(mColor);
 
-      if ((mcSaturation > 10) && (mcLightness > 8) && (mcLightness < 65)) {
+      if ((mcSaturation > 2) && (mcLightness > 2) && (mcLightness < 98)) {
         mImageHue.push(mcHue);
       } else {
         mImageHue.push(400);
@@ -67,7 +69,7 @@ const mSketch = (p5s) => {
     return mImageHue;
   };
 
-  const processImage = (mImageHue, _minHue, _maxHue) => {
+  const processImageByHue = (mImageHue, _minHue, _maxHue) => {
     mImageColor.loadPixels();
     const minHue = p5s.min(_minHue, _maxHue);
     const maxHue = p5s.max(_minHue, _maxHue);
@@ -84,6 +86,45 @@ const mSketch = (p5s) => {
     }
     mImageColor.updatePixels();
   };
+
+  const processImageByDistance = () => {
+    mImg = mImageResized;
+    mImg.loadPixels();
+    mImageColor.loadPixels();
+    const currentColor = centerColor;
+
+    const cR = centerColor.levels[0];
+    const cG = centerColor.levels[1];
+    const cB = centerColor.levels[2];
+
+    for (let i = 0; i < mImg.width * mImg.height; i++) {
+      const idx = 4 * i;
+      currentColor.levels.forEach((v, ci) => mImageColor.pixels[idx + ci] = v);
+
+      const mR = mImg.pixels[idx + 0];
+      const mG = mImg.pixels[idx + 1];
+      const mB = mImg.pixels[idx + 2];
+
+      const distance = Math.sqrt((mR - cR) * (mR - cR) + (mG - cG) * (mG - cG) + (mB - cB) * (mB - cB));
+      const pcdDist = distance / 441.67;
+
+      if (pcdDist > distanceFuzz) {
+        mImageColor.pixels[idx + 3] = 0;
+      }
+    }
+    mImageColor.updatePixels();
+    mImageColor.filter(p5s.ERODE);
+    mImageColor.filter(p5s.ERODE);
+    mImageColor.filter(p5s.DILATE);
+    mImageColor.filter(p5s.DILATE);
+    mImageColor.filter(p5s.DILATE);
+    mImageColor.filter(p5s.ERODE);
+  }
+
+  const processImage = () => {
+    // processImageByHue(mImageResizedHue, minHue, maxHue);
+    processImageByDistance();
+  }
 
   const loadImage = (filepath) => {
     p5s.loadImage(filepath, img => {
@@ -117,12 +158,22 @@ const mSketch = (p5s) => {
 
     $('#my-hue-min-picker').on('input', (event, _) => {
       minHue = parseInt(p5s.hue(p5s.color(event.target.value)));
-      processImage(mImageResizedHue, minHue, maxHue);
+      processImage();
     });
 
     $('#my-hue-max-picker').on('input', (event, _) => {
       maxHue = parseInt(p5s.hue(p5s.color(event.target.value)));
-      processImage(mImageResizedHue, minHue, maxHue);
+      processImage();
+    });
+
+    $('#my-color-center-picker').on('input', (event, _) => {
+      centerColor = p5s.color(event.target.value);
+      processImage();
+    });
+
+    $('#my-color-fuzz').on('input', (event, _) => {
+      distanceFuzz = parseFloat(event.target.value);
+      processImage();
     });
   };
 
