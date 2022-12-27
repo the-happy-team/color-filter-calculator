@@ -1,19 +1,18 @@
-// TODO:
-//   - display info (% de pixels, tamanho do quadrado numa tela 1mx1m)
-
 const mSketch = (p5s) => {
   let mImageOriginal;
   let mImageResized;
-  let mImageResizedHue;
   let mImageResizedProcess;
-  let mImageColorProcess;
+  let mImageResizedHue;
   let mImageColor;
+  let mImageColorProcess;
   let mImageLoaded = false;
   let mImageColorVisible = true;
   let minHue = 100;
   let maxHue = 140;
   let centerColor = p5s.color('#009800')
   let distanceFuzz = 0.30;
+  let pctColor = 0;
+  let oneMeterColor = 0;
 
   const resizeCanvas = () => {
     const menuHeight = $("#my-menu").outerHeight();
@@ -82,15 +81,21 @@ const mSketch = (p5s) => {
     const centerHue = Math.floor(minHue + (maxHue - minHue) / 2.0);
     const currentColor = p5s.color(`hsl(${centerHue}, 100%, 50%)`);
 
-    for (let i = 0; i < mImageColor.width * mImageColor.height; i++) {
+    const totalPixels = mImageColor.width * mImageColor.height;
+    let colorCnt = mImageColor.width * mImageColor.height;
+
+    for (let i = 0; i < totalPixels; i++) {
       const idx = 4 * i;
       currentColor.levels.forEach((v, ci) => mImageColor.pixels[idx + ci] = v);
 
       if (mImageHue[i] < minHue || mImageHue[i] > maxHue) {
         mImageColor.pixels[idx + 3] = 0;
+        colorCnt = colorCnt - 1;
       }
     }
     mImageColor.updatePixels();
+
+    return colorCnt / totalPixels;
   };
 
   const processImageByDistance = (mImgIn, mImgOut) => {
@@ -102,7 +107,10 @@ const mSketch = (p5s) => {
     const cG = centerColor.levels[1];
     const cB = centerColor.levels[2];
 
-    for (let i = 0; i < mImgIn.width * mImgIn.height; i++) {
+    const totalPixels = mImgIn.width * mImgIn.height;
+    let colorCnt = mImgIn.width * mImgIn.height;
+
+    for (let i = 0; i < totalPixels; i++) {
       const idx = 4 * i;
       currentColor.levels.forEach((v, ci) => mImgOut.pixels[idx + ci] = v);
 
@@ -115,21 +123,26 @@ const mSketch = (p5s) => {
 
       if (pcdDist > distanceFuzz) {
         mImgOut.pixels[idx + 3] = 0;
+        colorCnt = colorCnt - 1;
       }
     }
 
     mImgOut.updatePixels();
     // mImgOut.filter(p5s.ERODE);
-    mImgOut.filter(p5s.ERODE);
-    mImgOut.filter(p5s.DILATE);
+    // mImgOut.filter(p5s.ERODE);
+    // mImgOut.filter(p5s.DILATE);
     // mImgOut.filter(p5s.DILATE);
     // mImgOut.filter(p5s.DILATE);
     // mImgOut.filter(p5s.ERODE);
+
+    return colorCnt / totalPixels;
   }
 
   const processImage = () => {
-    // processImageByHue(mImageResizedHue, minHue, maxHue);
-    processImageByDistance(mImageResizedProcess, mImageColorProcess);
+    // pctColor = processImageByHue(mImageResizedHue, minHue, maxHue);
+    pctColor = processImageByDistance(mImageResizedProcess, mImageColorProcess);
+    oneMeterColor = Math.sqrt(pctColor);
+    $('#my-results').html(`${(pctColor * 100).toFixed(2)} % , ${oneMeterColor.toFixed(2)} m`);
   }
 
   const loadImage = (filepath) => {
