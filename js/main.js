@@ -2,19 +2,61 @@ const mSketch = (p5s) => {
   let mImageOriginal;
   let mImageResized;
   let mImageResizedProcess;
-  let mImageResizedHue;
   let mImageColor;
   let mImageColorProcess;
   let mImageLoaded = false;
   let mImageColorVisible = true;
-  let minHue = 100;
-  let maxHue = 140;
   let centerColor = p5s.color('#009800')
-  let distanceFuzz = 0.30;
+  let distanceFuzz = 0.30 * 0.30;
   let pctColor = 0;
   let oneMeterColor = 0;
 
-  const bilateralFilter = (mImgIn, mImgOut, kernelSize=2.0, distFactor=1.0, colorFactor=0.0001) => {
+  const resizeCanvas = () => {
+    const menuHeight = $("#my-menu").outerHeight();
+    const cWidth = p5s.windowWidth;
+    const cHeight = p5s.windowHeight - menuHeight;
+    p5s.resizeCanvas(cWidth, cHeight);
+  };
+
+  const resizeImage = () => {
+    let nWidth = mImageOriginal.width;
+    let nHeight = mImageOriginal.height;
+
+    if (nWidth > p5s.width) {
+      nWidth = p5s.width;
+      nHeight = nWidth * mImageOriginal.height / mImageOriginal.width;
+    }
+
+    if (nHeight > p5s.height) {
+      nHeight = p5s.height;
+      nWidth = nHeight * mImageOriginal.width / mImageOriginal.height;
+    }
+
+    nWidth = parseInt(nWidth);
+    nHeight = parseInt(nHeight);
+
+    const nWidth_2 = parseInt(nWidth / 2.0);
+    const nHeight_2 = parseInt(nHeight / 2.0);
+
+    mImageResized = p5s.createImage(nWidth, nHeight);
+    mImageColor = p5s.createImage(nWidth, nHeight);
+    mImageResized.copy(mImageOriginal,
+      0, 0, mImageOriginal.width, mImageOriginal.height,
+      0, 0, mImageResized.width, mImageResized.height);
+
+    mImageResizedProcess = p5s.createImage(nWidth_2, nHeight_2);
+    mImageColorProcess = p5s.createImage(nWidth_2, nHeight_2);
+
+    mImageResizedProcess.copy(mImageOriginal,
+      0, 0, mImageOriginal.width, mImageOriginal.height,
+      0, 0, mImageResizedProcess.width, mImageResizedProcess.height);
+
+    processImage();
+  };
+
+  const bilateralFilter = (mImgIn, kernelSize = 2.0, distFactor = 1.0, colorFactor = 0.0001) => {
+    mImgOut = p5s.createImage(mImgIn.width, mImgIn.height);
+
     mImgIn.loadPixels();
     mImgOut.loadPixels();
 
@@ -64,153 +106,70 @@ const mSketch = (p5s) => {
     }
 
     mImgOut.updatePixels();
+    return mImgOut;
   };
 
-  const resizeCanvas = () => {
-    const menuHeight = $("#my-menu").outerHeight();
-    const cWidth = p5s.windowWidth;
-    const cHeight = p5s.windowHeight - menuHeight;
-    p5s.resizeCanvas(cWidth, cHeight);
-  };
+  const processImageByDistance = (mImgIn) => {
+    mImgOut = p5s.createImage(mImgIn.width, mImgIn.height);
 
-  const resizeImage = () => {
-    let nWidth = mImageOriginal.width;
-    let nHeight = mImageOriginal.height;
-
-    if (nWidth > p5s.width) {
-      nWidth = p5s.width;
-      nHeight = nWidth * mImageOriginal.height / mImageOriginal.width;
-    }
-
-    if (nHeight > p5s.height) {
-      nHeight = p5s.height;
-      nWidth = nHeight * mImageOriginal.width / mImageOriginal.height;
-    }
-
-    nWidth = parseInt(nWidth);
-    nHeight = parseInt(nHeight);
-
-    const nWidth_2 = parseInt(nWidth / 2.0);
-    const nHeight_2 = parseInt(nHeight / 2.0);
-
-    mImageResized = p5s.createImage(nWidth, nHeight);
-    mImageColor = p5s.createImage(nWidth, nHeight);
-    mImageResized.copy(mImageOriginal,
-      0, 0, mImageOriginal.width, mImageOriginal.height,
-      0, 0, mImageResized.width, mImageResized.height);
-
-    mImageResizedProcess = p5s.createImage(nWidth_2, nHeight_2);
-    mImageColorProcess = p5s.createImage(nWidth_2, nHeight_2);
-
-    mImageResizedProcess.copy(mImageOriginal,
-      0, 0, mImageOriginal.width, mImageOriginal.height,
-      0, 0, mImageResizedProcess.width, mImageResizedProcess.height);
-
-    // mImageResizedHue = getImageHue(mImageResized);
-    processImage();
-  };
-
-  const getImageHue = (mImg) => {
-    let mImageHue = [];
-    mImg.loadPixels();
-    for (let i = 0; i < mImg.width * mImg.height; i++) {
-      const idx = 4 * i;
-      const mColor = p5s.color(
-        mImg.pixels[idx + 0],
-        mImg.pixels[idx + 1],
-        mImg.pixels[idx + 2]);
-
-      const mcHue = p5s.hue(mColor);
-      const mcSaturation = p5s.saturation(mColor);
-      const mcLightness = p5s.lightness(mColor);
-
-      if ((mcSaturation > 2) && (mcLightness > 2) && (mcLightness < 98)) {
-        mImageHue.push(mcHue);
-      } else {
-        mImageHue.push(400);
-      }
-    }
-    return mImageHue;
-  };
-
-  const processImageByHue = (mImageHue, _minHue, _maxHue) => {
-    mImageColor.loadPixels();
-    const minHue = p5s.min(_minHue, _maxHue);
-    const maxHue = p5s.max(_minHue, _maxHue);
-    const centerHue = Math.floor(minHue + (maxHue - minHue) / 2.0);
-    const currentColor = p5s.color(`hsl(${centerHue}, 100%, 50%)`);
-
-    const totalPixels = mImageColor.width * mImageColor.height;
-    let colorCnt = mImageColor.width * mImageColor.height;
-
-    for (let i = 0; i < totalPixels; i++) {
-      const idx = 4 * i;
-      currentColor.levels.forEach((v, ci) => mImageColor.pixels[idx + ci] = v);
-
-      if (mImageHue[i] < minHue || mImageHue[i] > maxHue) {
-        mImageColor.pixels[idx + 3] = 0;
-        colorCnt = colorCnt - 1;
-      }
-    }
-    mImageColor.updatePixels();
-
-    return colorCnt / totalPixels;
-  };
-
-  const processImageByDistance = (mImgIn, mImgOut) => {
     mImgIn.loadPixels();
     mImgOut.loadPixels();
-    const currentColor = centerColor;
 
     const cR = centerColor.levels[0];
     const cG = centerColor.levels[1];
     const cB = centerColor.levels[2];
 
     const totalPixels = mImgIn.width * mImgIn.height;
-    let colorCnt = mImgIn.width * mImgIn.height;
+    const maxDistance = 3 * 255 * 255;
 
+    let colorCnt = mImgIn.width * mImgIn.height;
     for (let i = 0; i < totalPixels; i++) {
       const idx = 4 * i;
-      currentColor.levels.forEach((v, ci) => mImgOut.pixels[idx + ci] = v);
+      centerColor.levels.forEach((v, ci) => mImgOut.pixels[idx + ci] = v);
 
       const mR = mImgIn.pixels[idx + 0];
       const mG = mImgIn.pixels[idx + 1];
       const mB = mImgIn.pixels[idx + 2];
 
-      const distance = Math.sqrt((mR - cR) * (mR - cR) + (mG - cG) * (mG - cG) + (mB - cB) * (mB - cB));
-      const pcdDist = distance / 441.67;
+      const distanceSq = ((mR - cR) * (mR - cR) + (mG - cG) * (mG - cG) + (mB - cB) * (mB - cB));
+      const pcdDist = distanceSq / maxDistance;
 
       if (pcdDist > distanceFuzz) {
-        currentColor.levels.forEach((_, ci) => mImgOut.pixels[idx + ci] = 0);
+        centerColor.levels.forEach((_, ci) => mImgOut.pixels[idx + ci] = 0);
         colorCnt = colorCnt - 1;
       }
     }
 
     mImgOut.updatePixels();
-    // mImgOut.filter(p5s.ERODE);
-    // mImgOut.filter(p5s.ERODE);
-    // mImgOut.filter(p5s.DILATE);
-    // mImgOut.filter(p5s.DILATE);
-    // mImgOut.filter(p5s.DILATE);
-    // mImgOut.filter(p5s.ERODE);
 
-    const tIn = p5s.createImage(mImgOut.width, mImgOut.height);
+    // return colorCnt / totalPixels;
+    return mImgOut;
+  };
 
-    tIn.copy(mImgOut,
-      0, 0, mImgOut.width, mImgOut.height,
-      0, 0, tIn.width, tIn.height);
+  const erodeDilate = (mImgIn) => {
+    mImgOut = p5s.createImage(mImgIn.width, mImgIn.height);
+    mImgOut.copy(mImgIn,
+      0, 0, mImgIn.width, mImgIn.height,
+      0, 0, mImgOut.width, mImgOut.height);
 
-    bilateralFilter(tIn, mImgOut);
+    mImgOut.filter(p5s.ERODE);
+    mImgOut.filter(p5s.ERODE);
+    mImgOut.filter(p5s.DILATE);
+    mImgOut.filter(p5s.DILATE);
+    mImgOut.filter(p5s.DILATE);
+    mImgOut.filter(p5s.ERODE);
 
-    return colorCnt / totalPixels;
-  }
+    return mImgOut;
+  };
 
   const processImage = () => {
-    // pctColor = processImageByHue(mImageResizedHue, minHue, maxHue);
-    pctColor = processImageByDistance(mImageResizedProcess, mImageColorProcess);
+    const pImg = processImageByDistance(mImageResizedProcess);
+    const edImg = erodeDilate(pImg);
+    const bfImg = bilateralFilter(edImg);
+    mImageColorProcess = processImageByDistance(bfImg);
 
-    // TODO: refactor functions to be out = f(in)
     // TODO: count pixels
+    pctColor = 1.0;
 
     oneMeterColor = Math.sqrt(pctColor);
     $('#my-results').html(`${(pctColor * 100).toFixed(2)} % , ${oneMeterColor.toFixed(2)} m`);
@@ -262,7 +221,7 @@ const mSketch = (p5s) => {
     });
 
     $('#my-color-fuzz').on('input', (event, _) => {
-      distanceFuzz = parseFloat(event.target.value);
+      distanceFuzz = parseFloat(event.target.value) * parseFloat(event.target.value);
       processImage();
     });
   };
@@ -292,11 +251,9 @@ const mSketch = (p5s) => {
       p5s.imageMode(p5s.CENTER);
 
       p5s.image(mImageResized, p5s.width / 2.0, p5s.height / 2.0);
-      if (mImageColorVisible) {
-        // p5s.image(mImageColor, p5s.width / 2.0, p5s.height / 2.0);
-      }
 
       if (mImageColorVisible) {
+        // p5s.image(mImageColor, p5s.width / 2.0, p5s.height / 2.0);
         p5s.image(mImageColorProcess,
           p5s.width / 2.0, p5s.height / 2.0,
           mImageResized.width, mImageResized.height);
