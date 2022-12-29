@@ -14,6 +14,58 @@ const mSketch = (p5s) => {
   let pctColor = 0;
   let oneMeterColor = 0;
 
+  const bilateralFilter = (mImgIn, mImgOut, kernelSize=2.0, distFactor=1.0, colorFactor=0.0001) => {
+    mImgIn.loadPixels();
+    mImgOut.loadPixels();
+
+    const colourDistNorm = Math.sqrt(2 * kernelSize * kernelSize) / (3 * 255 * 255);
+
+    for (let y = 0; y < mImgIn.height; y++) {
+      for (let x = 0; x < mImgIn.width; x++) {
+        const pixel = (y * mImgIn.width + x) * 4;
+
+        mImgOut.pixels[pixel] = 0;
+        mImgOut.pixels[pixel + 1] = 0;
+        mImgOut.pixels[pixel + 2] = 0;
+        mImgOut.pixels[pixel + 3] = mImgIn.pixels[pixel + 3];
+
+        let sumWeight = 0;
+        for (let i = -kernelSize; i <= kernelSize; i++) {
+          for (let j = -kernelSize; j <= kernelSize; j++) {
+            const yi = p5s.constrain(y + i, 0, mImgIn.height - 1);
+            const xj = p5s.constrain(x + j, 0, mImgIn.width - 1);
+
+            const kernel = (yi * mImgIn.width + xj) * 4;
+
+            const distSq = (i * i + j * j);
+            const kR = mImgIn.pixels[kernel + 0];
+            const kG = mImgIn.pixels[kernel + 1];
+            const kB = mImgIn.pixels[kernel + 2];
+
+            const pR = mImgIn.pixels[pixel + 0];
+            const pG = mImgIn.pixels[pixel + 1];
+            const pB = mImgIn.pixels[pixel + 2];
+
+            const colourDistSq = colourDistNorm * ((kR - pR) * (kR - pR) + (kG - pG) * (kG - pG) + (kB - pB) * (kB - pB));
+
+            const curWeight = Math.exp(-distSq / distFactor) * Math.exp(-colourDistSq / colorFactor);
+
+            sumWeight += curWeight;
+            mImgOut.pixels[pixel + 0] += curWeight * mImgIn.pixels[kernel + 0];
+            mImgOut.pixels[pixel + 1] += curWeight * mImgIn.pixels[kernel + 1];
+            mImgOut.pixels[pixel + 2] += curWeight * mImgIn.pixels[kernel + 2];
+          }
+        }
+
+        mImgOut.pixels[pixel + 0] /= sumWeight;
+        mImgOut.pixels[pixel + 1] /= sumWeight;
+        mImgOut.pixels[pixel + 2] /= sumWeight;
+      }
+    }
+
+    mImgOut.updatePixels();
+  };
+
   const resizeCanvas = () => {
     const menuHeight = $("#my-menu").outerHeight();
     const cWidth = p5s.windowWidth;
@@ -35,19 +87,26 @@ const mSketch = (p5s) => {
       nWidth = nHeight * mImageOriginal.width / mImageOriginal.height;
     }
 
+    nWidth = parseInt(nWidth);
+    nHeight = parseInt(nHeight);
+
+    const nWidth_2 = parseInt(nWidth / 2.0);
+    const nHeight_2 = parseInt(nHeight / 2.0);
+
     mImageResized = p5s.createImage(nWidth, nHeight);
     mImageColor = p5s.createImage(nWidth, nHeight);
     mImageResized.copy(mImageOriginal,
       0, 0, mImageOriginal.width, mImageOriginal.height,
       0, 0, mImageResized.width, mImageResized.height);
 
-    mImageResizedProcess = p5s.createImage(nWidth / 2, nHeight / 2);
-    mImageColorProcess = p5s.createImage(nWidth / 2, nHeight / 2);
+    mImageResizedProcess = p5s.createImage(nWidth_2, nHeight_2);
+    mImageColorProcess = p5s.createImage(nWidth_2, nHeight_2);
+
     mImageResizedProcess.copy(mImageOriginal,
       0, 0, mImageOriginal.width, mImageOriginal.height,
       0, 0, mImageResizedProcess.width, mImageResizedProcess.height);
 
-      // mImageResizedHue = getImageHue(mImageResized);
+    // mImageResizedHue = getImageHue(mImageResized);
     processImage();
   };
 
@@ -122,7 +181,7 @@ const mSketch = (p5s) => {
       const pcdDist = distance / 441.67;
 
       if (pcdDist > distanceFuzz) {
-        mImgOut.pixels[idx + 3] = 0;
+        currentColor.levels.forEach((_, ci) => mImgOut.pixels[idx + ci] = 0);
         colorCnt = colorCnt - 1;
       }
     }
@@ -135,12 +194,24 @@ const mSketch = (p5s) => {
     // mImgOut.filter(p5s.DILATE);
     // mImgOut.filter(p5s.ERODE);
 
+    const tIn = p5s.createImage(mImgOut.width, mImgOut.height);
+
+    tIn.copy(mImgOut,
+      0, 0, mImgOut.width, mImgOut.height,
+      0, 0, tIn.width, tIn.height);
+
+    bilateralFilter(tIn, mImgOut);
+
     return colorCnt / totalPixels;
   }
 
   const processImage = () => {
     // pctColor = processImageByHue(mImageResizedHue, minHue, maxHue);
     pctColor = processImageByDistance(mImageResizedProcess, mImageColorProcess);
+
+    // TODO: refactor functions to be out = f(in)
+    // TODO: count pixels
+
     oneMeterColor = Math.sqrt(pctColor);
     $('#my-results').html(`${(pctColor * 100).toFixed(2)} % , ${oneMeterColor.toFixed(2)} m`);
   }
@@ -224,10 +295,6 @@ const mSketch = (p5s) => {
       if (mImageColorVisible) {
         // p5s.image(mImageColor, p5s.width / 2.0, p5s.height / 2.0);
       }
-
-      // p5s.image(mImageResizedProcess,
-      //   p5s.width / 2.0, p5s.height / 2.0,
-      //   mImageResized.width, mImageResized.height);
 
       if (mImageColorVisible) {
         p5s.image(mImageColorProcess,
