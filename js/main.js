@@ -14,8 +14,8 @@ const mSketch = (p5s) => {
 
   let mImageLoaded = false;
   let mImageColorVisible = true;
-  let centerColor = p5s.color('#009800')
-  let distanceFuzz = 0.30 * 0.30;
+  let centerColor;
+  let distanceFuzz;
   let pctColor = 0;
   let oneMeterColor = 0;
 
@@ -127,7 +127,7 @@ const mSketch = (p5s) => {
     const cB = centerColor.levels[2];
 
     const totalPixels = mImgIn.width * mImgIn.height;
-    const maxDistance = 3 * 255 * 255;
+    const maxDistance = 3 * 255;
 
     for (let i = 0; i < totalPixels; i++) {
       const idx = 4 * i;
@@ -137,7 +137,7 @@ const mSketch = (p5s) => {
       const mG = mImgIn.pixels[idx + 1];
       const mB = mImgIn.pixels[idx + 2];
 
-      const distanceSq = ((mR - cR) * (mR - cR) + (mG - cG) * (mG - cG) + (mB - cB) * (mB - cB));
+      const distanceSq = (Math.abs(mR - cR) + Math.abs(mG - cG) + Math.abs(mB - cB));
       const pcdDist = distanceSq / maxDistance;
 
       if (pcdDist > distanceFuzz) {
@@ -245,9 +245,12 @@ const mSketch = (p5s) => {
     });
 
     $('#my-color-fuzz').on('input', (event, _) => {
-      distanceFuzz = parseFloat(event.target.value) * parseFloat(event.target.value);
+      distanceFuzz = parseFloat(event.target.value);
       processImage();
     });
+
+    centerColor = p5s.color($('#my-color-center-picker').val());
+    distanceFuzz = parseFloat($('#my-color-fuzz').val());
   };
 
   p5s.setup = () => {
@@ -260,8 +263,8 @@ const mSketch = (p5s) => {
     p5s.pixelDensity(2);
     p5s.randomSeed(1010);
     p5s.frameRate(24);
-    loadImage("./assets/img00.jpg");
     setupMenu();
+    loadImage("./assets/img00.jpg");
   };
 
   p5s.draw = () => {
